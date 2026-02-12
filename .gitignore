@@ -1,0 +1,13 @@
+# Uploaded files (keep directory structure)
+uploads/*
+!uploads/.gitkeep
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

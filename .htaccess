@@ -1,0 +1,16 @@
+RewriteEngine On
+RewriteBase /cms/
+
+# Protect includes directory
+RewriteRule ^includes/ - [F,L]
+
+# Public routes
+RewriteRule ^clanek/([a-z0-9-]+)$ index.php?route=article&slug=$1 [L,QSA]
+RewriteRule ^kategorie/([a-z0-9-]+)$ index.php?route=category&slug=$1 [L,QSA]
+RewriteRule ^tag/([a-z0-9-]+)$ index.php?route=tag&slug=$1 [L,QSA]
+RewriteRule ^stranka/([0-9]+)$ index.php?route=home&page=$1 [L,QSA]
+
+# Don't rewrite existing files/dirs
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.+)$ index.php [L,QSA]

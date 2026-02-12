@@ -1,0 +1,4 @@
+# Admin directory - no rewrite needed, direct PHP files
+# Protect includes
+RewriteEngine On
+RewriteRule ^includes/ - [F,L]
