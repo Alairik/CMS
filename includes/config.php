@@ -5,9 +5,9 @@
 
 // Database
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'cms_database');
-define('DB_USER', 'cms_user');
-define('DB_PASS', 'cms_password');
+define('DB_NAME', 'd391762_cmstst');
+define('DB_USER', 'w391762_cmstst');
+define('DB_PASS', 'Jvyz23:kpgn4uYW');
 define('DB_CHARSET', 'utf8mb4');
 
 // Paths
