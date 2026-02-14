@@ -6,7 +6,7 @@
 // Database
 define('DB_HOST', 'md395.wedos.net');
 define('DB_NAME', 'd391762_cmstst');
-define('DB_USER', 'w391762_cmstst');
+define('DB_USER', 'a391762_cmstst');
 define('DB_PASS', 'Jvyz23:kpgn4uYW');
 define('DB_CHARSET', 'utf8mb4');
 
