@@ -3,7 +3,7 @@ name: Deploy to FTP
 on:
   push:
     branches:
-      - main
+      - claude/build-simple-cms-4W7YB
 
 jobs:
   deploy:
