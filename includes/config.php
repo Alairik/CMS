@@ -32,5 +32,5 @@ define('SESSION_LIFETIME', 3600); // 1 hour
 date_default_timezone_set('Europe/Prague');
 
 // Error reporting (turn off in production)
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
 error_reporting(E_ALL);
