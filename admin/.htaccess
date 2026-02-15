@@ -1,0 +1,9 @@
+RewriteEngine On
+RewriteBase /admin/
+
+# Serve existing files directly
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Route everything to admin front controller
+RewriteRule ^ index.php [L,QSA]
