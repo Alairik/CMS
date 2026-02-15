@@ -1,16 +1,66 @@
 RewriteEngine On
-RewriteBase /cms/
+RewriteBase /
 
-# Protect includes directory
-RewriteRule ^includes/ - [F,L]
+# Force HTTPS (uncomment on production)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# Public routes
-RewriteRule ^clanek/([a-z0-9-]+)$ index.php?route=article&slug=$1 [L,QSA]
-RewriteRule ^kategorie/([a-z0-9-]+)$ index.php?route=category&slug=$1 [L,QSA]
-RewriteRule ^tag/([a-z0-9-]+)$ index.php?route=tag&slug=$1 [L,QSA]
-RewriteRule ^stranka/([0-9]+)$ index.php?route=home&page=$1 [L,QSA]
-
-# Don't rewrite existing files/dirs
-RewriteCond %{REQUEST_FILENAME} !-f
+# Remove trailing slash (except root)
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.+)$ index.php [L,QSA]
+RewriteCond %{REQUEST_URI} (.+)/$
+RewriteRule ^ %1 [L,R=301]
+
+# Serve existing files/dirs directly
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Serve static content files directly
+RewriteRule ^content/(sitemap\.xml|robots\.txt|llms\.txt)$ content/$1 [L]
+
+# Route everything else to front controller
+RewriteRule ^ index.php [L,QSA]
+
+# Security: deny access to sensitive files
+<FilesMatch "\.(php|log|json)$">
+    <If "%{REQUEST_URI} =~ m#^/(index\.php|install\.php)$#">
+    </If>
+    <Else>
+        <If "%{REQUEST_URI} =~ m#^/(admin|themes|core)/#">
+        </If>
+    </Else>
+</FilesMatch>
+
+# Prevent directory listing
+Options -Indexes
+
+# Prevent access to hidden files
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Block access to config
+<Files "config.php">
+    Require all denied
+</Files>
+
+<Files "config.example.php">
+    Require all denied
+</Files>
+
+# Cache static assets
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+</IfModule>
+
+# Compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json text/xml image/svg+xml
+</IfModule>

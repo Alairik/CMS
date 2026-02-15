@@ -1,13 +1,8 @@
-# Uploaded files (keep directory structure)
-uploads/*
-!uploads/.gitkeep
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# OS
+config.php
+uploads/
+cache/
+*.log
 .DS_Store
 Thumbs.db
+*.swp
+*.swo

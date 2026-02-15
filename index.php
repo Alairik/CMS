@@ -1,96 +1,124 @@
 <?php
 /**
- * Public frontend router
+ * ZveleCMS — Front Controller
+ * All requests are routed through this file.
  */
-require_once __DIR__ . '/includes/config.php';
-require_once INCLUDES_PATH . '/db.php';
-require_once INCLUDES_PATH . '/helpers.php';
-require_once INCLUDES_PATH . '/articles.php';
-require_once INCLUDES_PATH . '/categories.php';
 
-$route = $_GET['route'] ?? 'home';
+define('ZVELE_CMS', true);
 
-switch ($route) {
-    case 'article':
-        $slug = $_GET['slug'] ?? '';
-        $article = article_get_by_slug($slug);
-        if (!$article) {
-            http_response_code(404);
-            $pageTitle = 'Stránka nenalezena';
-            $template = '404';
-        } else {
-            $pageTitle = $article['title'];
-            $articleTags = article_get_tags($article['id']);
-            $template = 'article';
-        }
-        break;
+// Load configuration
+require_once __DIR__ . '/config.php';
 
-    case 'category':
-        $slug = $_GET['slug'] ?? '';
-        $db = db_connect();
-        $stmt = $db->prepare('SELECT * FROM categories WHERE slug = ?');
-        $stmt->execute([$slug]);
-        $category = $stmt->fetch();
-        if (!$category) {
-            http_response_code(404);
-            $pageTitle = 'Kategorie nenalezena';
-            $template = '404';
-        } else {
-            $page = max(1, (int) ($_GET['page'] ?? 1));
-            $total = articles_count('published', $category['id']);
-            $pag = paginate($total, ARTICLES_PER_PAGE, $page);
-            $articles = articles_list($pag['per_page'], $pag['offset'], 'published', $category['id']);
-            $pageTitle = 'Kategorie: ' . $category['name'];
-            $template = 'list';
-        }
-        break;
-
-    case 'tag':
-        $slug = $_GET['slug'] ?? '';
-        $db = db_connect();
-        $stmt = $db->prepare('SELECT * FROM tags WHERE slug = ?');
-        $stmt->execute([$slug]);
-        $tag = $stmt->fetch();
-        if (!$tag) {
-            http_response_code(404);
-            $pageTitle = 'Tag nenalezen';
-            $template = '404';
-        } else {
-            $page = max(1, (int) ($_GET['page'] ?? 1));
-            $stmt = $db->prepare('SELECT COUNT(*) FROM article_tags at2 JOIN articles a ON a.id = at2.article_id WHERE at2.tag_id = ? AND a.status = ?');
-            $stmt->execute([$tag['id'], 'published']);
-            $total = (int) $stmt->fetchColumn();
-            $pag = paginate($total, ARTICLES_PER_PAGE, $page);
-
-            $stmt = $db->prepare('SELECT a.*, u.username AS author_name, c.name AS category_name
-                FROM articles a
-                JOIN article_tags at2 ON a.id = at2.article_id
-                LEFT JOIN users u ON a.author_id = u.id
-                LEFT JOIN categories c ON a.category_id = c.id
-                WHERE at2.tag_id = ? AND a.status = ?
-                ORDER BY a.created_at DESC LIMIT ? OFFSET ?');
-            $stmt->execute([$tag['id'], 'published', $pag['per_page'], $pag['offset']]);
-            $articles = $stmt->fetchAll();
-            $pageTitle = 'Tag: ' . $tag['name'];
-            $template = 'list';
-        }
-        break;
-
-    default: // home
-        $page = max(1, (int) ($_GET['page'] ?? 1));
-        $total = articles_count('published');
-        $pag = paginate($total, ARTICLES_PER_PAGE, $page);
-        $articles = articles_list($pag['per_page'], $pag['offset'], 'published');
-        $pageTitle = SITE_NAME;
-        $template = 'list';
-        break;
+// Check if install needed
+if (!file_exists(ROOT_PATH . '/config.php') || (file_exists(ROOT_PATH . '/install.php') && !defined('DB_NAME'))) {
+    header('Location: /install.php');
+    exit;
 }
 
-// Get categories for sidebar
-$allCategories = categories_list();
-$allTags = tags_list();
+// Bootstrap the application
+require_once CORE_PATH . '/bootstrap.php';
 
-// Render
-require_once __DIR__ . '/templates/header.php';
-require_once __DIR__ . '/templates/' . $template . '.php';
-require_once __DIR__ . '/templates/footer.php';
+// Define frontend routes
+Router::get('/', function () {
+    $db = Database::getInstance();
+    $page = $db->fetchOne(
+        "SELECT * FROM zvele_pages WHERE slug = ? AND status = 'published'",
+        ['homepage']
+    );
+
+    if (!$page) {
+        // Fallback: show first published page
+        $page = $db->fetchOne(
+            "SELECT * FROM zvele_pages WHERE status = 'published' ORDER BY sort_order ASC, id ASC LIMIT 1"
+        );
+    }
+
+    if ($page) {
+        $page['blocks'] = json_decode($page['blocks'], true) ?? [];
+        require_once CORE_PATH . '/Template.php';
+        Template::render('page', ['page' => $page]);
+    } else {
+        echo '<!DOCTYPE html><html lang="cs"><head><meta charset="UTF-8"><title>' . e(SITE_NAME) . '</title></head>';
+        echo '<body><h1>Vítejte v ZveleCMS</h1><p>Zatím nejsou vytvořeny žádné stránky.</p>';
+        echo '<p><a href="/admin">Přejít do administrace</a></p></body></html>';
+    }
+});
+
+// Static pages by slug
+Router::get('/{slug}', function (string $slug) {
+    // Skip admin routes
+    if ($slug === 'admin') {
+        return;
+    }
+
+    $db = Database::getInstance();
+    $page = $db->fetchOne(
+        "SELECT * FROM zvele_pages WHERE slug = ? AND status = 'published'",
+        [$slug]
+    );
+
+    if (!$page) {
+        Router::notFound();
+    }
+
+    $page['blocks'] = json_decode($page['blocks'], true) ?? [];
+    require_once CORE_PATH . '/Template.php';
+    Template::render('page', ['page' => $page]);
+});
+
+// Blog listing
+Router::get('/blog', function () {
+    $db = Database::getInstance();
+    $perPage = (int) setting('blog_posts_per_page', 10);
+    $currentPage = max(1, (int) ($_GET['page'] ?? 1));
+    $offset = ($currentPage - 1) * $perPage;
+
+    $total = $db->count('zvele_posts', "status = 'published'");
+    $posts = $db->fetchAll(
+        "SELECT p.*, u.name as author_name FROM zvele_posts p
+         LEFT JOIN zvele_users u ON p.author_id = u.id
+         WHERE p.status = 'published'
+         ORDER BY p.published_at DESC
+         LIMIT ? OFFSET ?",
+        [$perPage, $offset]
+    );
+
+    $totalPages = (int) ceil($total / $perPage);
+
+    require_once CORE_PATH . '/Template.php';
+    Template::render('blog', [
+        'posts' => $posts,
+        'currentPage' => $currentPage,
+        'totalPages' => $totalPages,
+    ]);
+});
+
+// Single blog post
+Router::get('/blog/{slug}', function (string $slug) {
+    $db = Database::getInstance();
+    $post = $db->fetchOne(
+        "SELECT p.*, u.name as author_name, u.email as author_email
+         FROM zvele_posts p
+         LEFT JOIN zvele_users u ON p.author_id = u.id
+         WHERE p.slug = ? AND p.status = 'published'",
+        [$slug]
+    );
+
+    if (!$post) {
+        Router::notFound();
+    }
+
+    $post['tags'] = json_decode($post['tags'], true) ?? [];
+    require_once CORE_PATH . '/Template.php';
+    Template::render('post', ['post' => $post]);
+});
+
+// Frontend form submission
+Router::post('/form/submit', function () {
+    Security::validateCsrf();
+    require_once CORE_PATH . '/Form.php';
+    Form::handleSubmission();
+});
+
+// Dispatch the request
+Router::dispatch();
