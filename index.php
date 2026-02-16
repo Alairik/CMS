@@ -9,7 +9,6 @@ require_once INCLUDES_PATH . '/articles.php';
 require_once INCLUDES_PATH . '/categories.php';
 
 $route = $_GET['route'] ?? 'home';
-$metaDescription = SITE_NAME . ' — moderní redakční systém pro tvorbu a správu obsahu';
 
 switch ($route) {
     case 'article':
@@ -21,7 +20,6 @@ switch ($route) {
             $template = '404';
         } else {
             $pageTitle = $article['title'];
-            $metaDescription = $article['excerpt'] ?: excerpt($article['content'], 160);
             $articleTags = article_get_tags($article['id']);
             $template = 'article';
         }
@@ -43,7 +41,6 @@ switch ($route) {
             $pag = paginate($total, ARTICLES_PER_PAGE, $page);
             $articles = articles_list($pag['per_page'], $pag['offset'], 'published', $category['id']);
             $pageTitle = 'Kategorie: ' . $category['name'];
-            $metaDescription = 'Články v kategorii ' . $category['name'];
             $template = 'list';
         }
         break;
@@ -65,7 +62,7 @@ switch ($route) {
             $total = (int) $stmt->fetchColumn();
             $pag = paginate($total, ARTICLES_PER_PAGE, $page);
 
-            $stmt = $db->prepare('SELECT a.*, u.username AS author_name, c.name AS category_name, c.slug AS category_slug
+            $stmt = $db->prepare('SELECT a.*, u.username AS author_name, c.name AS category_name
                 FROM articles a
                 JOIN article_tags at2 ON a.id = at2.article_id
                 LEFT JOIN users u ON a.author_id = u.id
@@ -75,7 +72,6 @@ switch ($route) {
             $stmt->execute([$tag['id'], 'published', $pag['per_page'], $pag['offset']]);
             $articles = $stmt->fetchAll();
             $pageTitle = 'Tag: ' . $tag['name'];
-            $metaDescription = 'Články s tagem ' . $tag['name'];
             $template = 'list';
         }
         break;
@@ -90,7 +86,7 @@ switch ($route) {
         break;
 }
 
-// Get categories and tags for navigation/sidebar
+// Get categories for sidebar
 $allCategories = categories_list();
 $allTags = tags_list();
 
