@@ -19,7 +19,7 @@ function articles_list(int $limit, int $offset, ?string $status = null, ?int $ca
 
     $whereSQL = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
-    $sql = "SELECT a.*, u.username AS author_name, c.name AS category_name
+    $sql = "SELECT a.*, u.username AS author_name, c.name AS category_name, c.slug AS category_slug
             FROM articles a
             LEFT JOIN users u ON a.author_id = u.id
             LEFT JOIN categories c ON a.category_id = c.id
@@ -57,7 +57,7 @@ function articles_count(?string $status = null, ?int $categoryId = null): int {
 
 function article_get(int $id): ?array {
     $db = db_connect();
-    $stmt = $db->prepare('SELECT a.*, u.username AS author_name, c.name AS category_name
+    $stmt = $db->prepare('SELECT a.*, u.username AS author_name, c.name AS category_name, c.slug AS category_slug
                            FROM articles a
                            LEFT JOIN users u ON a.author_id = u.id
                            LEFT JOIN categories c ON a.category_id = c.id
@@ -69,7 +69,7 @@ function article_get(int $id): ?array {
 
 function article_get_by_slug(string $slug): ?array {
     $db = db_connect();
-    $stmt = $db->prepare('SELECT a.*, u.username AS author_name, c.name AS category_name
+    $stmt = $db->prepare('SELECT a.*, u.username AS author_name, c.name AS category_name, c.slug AS category_slug
                            FROM articles a
                            LEFT JOIN users u ON a.author_id = u.id
                            LEFT JOIN categories c ON a.category_id = c.id
