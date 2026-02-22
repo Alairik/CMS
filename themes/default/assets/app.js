@@ -7,6 +7,19 @@
 (function () {
     'use strict';
 
+    /* === Header Scroll Effect === */
+    var header = document.querySelector('.site-header');
+    if (header) {
+        var scrolled = false;
+        window.addEventListener('scroll', function () {
+            var isScrolled = window.scrollY > 10;
+            if (isScrolled !== scrolled) {
+                scrolled = isScrolled;
+                header.classList.toggle('site-header--scrolled', scrolled);
+            }
+        }, { passive: true });
+    }
+
     /* === Mobile Menu === */
     var menuToggle = document.querySelector('[data-menu-toggle]');
     var menu = document.querySelector('[data-menu]');

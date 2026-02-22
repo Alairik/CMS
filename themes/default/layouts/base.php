@@ -34,6 +34,18 @@
     <meta name="twitter:title" content="<?= e($seo['meta_title'] ?? $seo['title'] ?? '') ?>">
     <meta name="twitter:description" content="<?= e($seo['meta_description'] ?? '') ?>">
 
+    <!-- Tracking IDs (read by cookie consent JS) -->
+    <?php
+    $gtmId = setting('gtm_id', '');
+    $ga4Id = setting('ga4_id', '');
+    $gadsId = setting('gads_id', '');
+    $metaPixelId = setting('meta_pixel_id', '');
+    ?>
+    <?php if ($gtmId): ?><meta name="gtm-id" content="<?= e($gtmId) ?>"><?php endif; ?>
+    <?php if ($ga4Id): ?><meta name="ga4-id" content="<?= e($ga4Id) ?>"><?php endif; ?>
+    <?php if ($gadsId): ?><meta name="gads-id" content="<?= e($gadsId) ?>"><?php endif; ?>
+    <?php if ($metaPixelId): ?><meta name="meta-pixel-id" content="<?= e($metaPixelId) ?>"><?php endif; ?>
+
     <!-- Preload CSS -->
     <link rel="preload" href="<?= asset('themes/default/assets/style.css') ?>" as="style">
     <link rel="stylesheet" href="<?= asset('themes/default/assets/style.css') ?>">
