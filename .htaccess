@@ -1,6 +1,24 @@
 RewriteEngine On
 RewriteBase /
 
+# ── Akrasia subdomain routing ─────────────────────────────────────────────
+# Force HTTPS for akrasia.zvelebil.online before the internal subfolder rewrite.
+# Wedos: SSL terminates at proxy, so %{HTTPS} is always "off" — check X-Forwarded-Proto.
+RewriteCond %{HTTP_HOST} ^akrasia\.zvelebil\.online$ [NC]
+RewriteCond %{HTTPS} off
+RewriteCond %{HTTP:X-Forwarded-Proto} !https
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Route akrasia.zvelebil.online/* to /akrasia/* subfolder (internal rewrite).
+RewriteCond %{HTTP_HOST} ^akrasia\.zvelebil\.online$ [NC]
+RewriteCond %{REQUEST_URI} !^/akrasia/
+RewriteRule ^(.*)$ /akrasia/$1 [L]
+
+# Pass all /akrasia/ requests through to Akrasia's own .htaccess.
+# Without this, the CMS front-controller below would catch non-file/dir paths.
+RewriteCond %{REQUEST_URI} ^/akrasia(/|$)
+RewriteRule ^ - [L]
+
 # Force HTTPS (uncomment on production)
 # RewriteCond %{HTTPS} off
 # RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
